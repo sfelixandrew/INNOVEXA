@@ -343,33 +343,66 @@ export async function fetchInitialSupabaseState() {
       category: row.category
     }));
 
-    // Auto-seed Leaderboard if empty in Supabase
+    // Auto-seed / Sync Leaderboard with registered teams if missing in Supabase
     let lbList = leaderboardRes.data || [];
-    if (lbList.length === 0 && INITIAL_LEADERBOARD.length > 0) {
-      const rowsToInsert = INITIAL_LEADERBOARD.map((t) => ({
-        team_id: t.teamId,
-        team_name: t.teamName,
-        team_code: t.teamCode,
-        leader_name: t.leaderName,
-        members: t.members,
-        active_logins: t.activeLogins || [],
-        abbrev_score: t.abbrevScore || 0,
-        image_score: t.imageScore || 0,
-        abbrev_completed: t.abbrevCompleted || false,
-        image_completed: t.imageCompleted || false,
-        bonus_score: t.bonusScore || 0,
-        penalty: t.penalty || 0,
-        total_score: t.totalScore || 0,
-        time_seconds: t.timeSeconds || 0,
-        last_played: t.lastPlayed || 'Just now',
-        status: t.status || 'Present',
-        member_attendance: t.memberAttendance || {},
-        registration_time: t.registrationTime || 'Just now',
+    const teamsListForLb = teamsRes.data || [];
+
+    let needsUpsert = false;
+    const existingLbTeamIds = new Set(lbList.map((row) => row.team_id || row.teamId));
+
+    teamsListForLb.forEach((t) => {
+      const teamId = t.id;
+      if (teamId && !existingLbTeamIds.has(teamId)) {
+        const newRow = {
+          team_id: t.id,
+          team_name: t.team_name || t.teamName,
+          team_code: t.team_code || t.teamCode,
+          leader_name: t.leader_name || t.leaderName,
+          members: t.members || [],
+          active_logins: t.active_logins || t.activeLogins || [],
+          abbrev_score: 0,
+          image_score: 0,
+          abbrev_completed: false,
+          image_completed: false,
+          bonus_score: 0,
+          penalty: t.penalty || 0,
+          total_score: 0,
+          time_seconds: 0,
+          last_played: 'Registered',
+          status: t.status || 'Active',
+          member_attendance: {},
+          registration_time: t.created_time || new Date().toISOString(),
+          updated_at: new Date().toISOString()
+        };
+        lbList.push(newRow);
+        needsUpsert = true;
+      }
+    });
+
+    if (needsUpsert && lbList.length > 0) {
+      await supabase.from("leaderboard").upsert(lbList.map((row) => ({
+        team_id: row.team_id || row.teamId,
+        team_name: row.team_name || row.teamName,
+        team_code: row.team_code || row.teamCode,
+        leader_name: row.leader_name || row.leaderName,
+        members: row.members || [],
+        active_logins: row.active_logins || row.activeLogins || [],
+        abbrev_score: row.abbrev_score || row.abbrevScore || 0,
+        image_score: row.image_score || row.imageScore || 0,
+        abbrev_completed: row.abbrev_completed || row.abbrevCompleted || false,
+        image_completed: row.image_completed || row.imageCompleted || false,
+        bonus_score: row.bonus_score || row.bonusScore || 0,
+        penalty: row.penalty || row.penalty || 0,
+        total_score: row.total_score || row.totalScore || 0,
+        time_seconds: row.time_seconds || row.timeSeconds || 0,
+        last_played: row.last_played || row.lastPlayed || 'Registered',
+        status: row.status || 'Active',
+        member_attendance: row.member_attendance || row.memberAttendance || {},
+        registration_time: row.registration_time || row.registrationTime || 'Just now',
         updated_at: new Date().toISOString()
-      }));
-      await supabase.from("leaderboard").upsert(rowsToInsert);
-      lbList = rowsToInsert;
+      })));
     }
+
     state.leaderboard = lbList.map((row, idx) => ({
       sNo: idx + 1,
       rank: idx + 1,
@@ -417,13 +450,13 @@ export async function saveGameResumeToSupabase(resumeRecord) {
       const { data, error } = await supabase
         .from("game_resumes")
         .upsert([{
-          team_id: resumeRecord.teamId,
-          team_name: resumeRecord.teamName,
-          game_id: resumeRecord.gameId,
-          game_title: resumeRecord.gameTitle,
-          current_index: resumeRecord.currentIndex || 0,
-          score: resumeRecord.score || 0,
-          saved_state: resumeRecord.savedState || {},
+          team_id: resumeRecord.teamId || resumeRecord.team_id,
+          team_name: resumeRecord.teamName || resumeRecord.team_name,
+          game_id: resumeRecord.gameId || resumeRecord.game_id,
+          game_title: resumeRecord.gameTitle || resumeRecord.game_title,
+          current_index: resumeRecord.currentIndex !== undefined ? resumeRecord.currentIndex : (resumeRecord.current_index || 0),
+          score: resumeRecord.score !== undefined ? resumeRecord.score : (resumeRecord.score || 0),
+          saved_state: resumeRecord.savedState || resumeRecord.saved_state || {},
           status: resumeRecord.status || 'pending_resume',
           updated_at: new Date().toISOString()
         }]);
@@ -631,24 +664,24 @@ export async function saveLeaderboardToSupabase(leaderboardList) {
   if (isSupabaseConfigured()) {
     try {
       const rows = leaderboardList.map((t) => ({
-        team_id: t.teamId,
-        team_name: t.teamName,
-        team_code: t.teamCode,
-        leader_name: t.leaderName,
-        members: t.members,
+        team_id: t.teamId || t.id || t.team_id,
+        team_name: t.teamName || t.team_name,
+        team_code: t.teamCode || t.team_code,
+        leader_name: t.leaderName || t.leader_name,
+        members: t.members || [],
         active_logins: t.activeLogins || t.active_logins || [],
-        abbrev_score: t.abbrevScore || 0,
-        image_score: t.imageScore || 0,
-        abbrev_completed: t.abbrevCompleted || false,
-        image_completed: t.imageCompleted || false,
-        bonus_score: t.bonusScore || 0,
-        penalty: t.penalty || 0,
-        total_score: t.totalScore || 0,
-        time_seconds: t.timeSeconds || 0,
-        last_played: t.lastPlayed || 'Just now',
+        abbrev_score: t.abbrevScore !== undefined ? t.abbrevScore : (t.abbrev_score || 0),
+        image_score: t.imageScore !== undefined ? t.imageScore : (t.image_score || 0),
+        abbrev_completed: t.abbrevCompleted !== undefined ? t.abbrevCompleted : (t.abbrev_completed || false),
+        image_completed: t.imageCompleted !== undefined ? t.imageCompleted : (t.image_completed || false),
+        bonus_score: t.bonusScore !== undefined ? t.bonusScore : (t.bonus_score || 0),
+        penalty: t.penalty !== undefined ? t.penalty : (t.penalty || 0),
+        total_score: t.totalScore !== undefined ? t.totalScore : (t.total_score || 0),
+        time_seconds: t.timeSeconds !== undefined ? t.timeSeconds : (t.time_seconds || 0),
+        last_played: t.lastPlayed || t.last_played || 'Just now',
         status: t.status || 'Present',
-        member_attendance: t.memberAttendance || {},
-        registration_time: t.registrationTime || 'Just now',
+        member_attendance: t.memberAttendance || t.member_attendance || {},
+        registration_time: t.registrationTime || t.registration_time || 'Just now',
         updated_at: new Date().toISOString()
       }));
       const { data, error } = await supabase

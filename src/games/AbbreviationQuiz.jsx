@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import { 
   CheckCircle2, XCircle, Trophy, ArrowRight, RotateCcw, 
   HelpCircle, AlertTriangle, Sparkles, Award, Lock
@@ -24,26 +24,87 @@ export default function AbbreviationQuiz({
   resumeData
 }) {
   const [shuffledQuestions, setShuffledQuestions] = useState([]);
-  const [currentIndex, setCurrentIndex] = useState(resumeData?.currentIndex || 0);
+  const [currentIndex, setCurrentIndex] = useState(0);
   const [selectedOption, setSelectedOption] = useState(null);
-  const [score, setScore] = useState(resumeData?.score || 0);
-  const [answers, setAnswers] = useState(resumeData?.answers || []);
+  const [score, setScore] = useState(0);
+  const [answers, setAnswers] = useState([]);
   const [isFinished, setIsFinished] = useState(false);
   const [isSubmitted, setIsSubmitted] = useState(false);
 
+  const isInitializedRef = useRef(false);
+  const sessionKey = `innovex_session_abbrev_quiz_${team?.id || "guest"}`;
+
+  // Initialize randomized 30-question session ONCE per active game
   useEffect(() => {
-    const baseList = questionsList.length > 0 ? questionsList : ABBREVIATION_QUESTIONS;
-    if (resumeData?.savedState?.savedQuestions) {
+    if (isInitializedRef.current) return;
+    isInitializedRef.current = true;
+
+    // 1. Check resumeData from Supabase
+    if (resumeData?.savedState?.savedQuestions && resumeData.savedState.savedQuestions.length > 0) {
       setShuffledQuestions(resumeData.savedState.savedQuestions);
       setCurrentIndex(resumeData.currentIndex || 0);
       setScore(resumeData.score || 0);
-    } else {
-      setShuffledQuestions(shuffleArray(baseList));
-      setCurrentIndex(0);
-      setScore(0);
-      setAnswers([]);
+      if (resumeData.savedState.answers) setAnswers(resumeData.savedState.answers);
+      return;
     }
-  }, [questionsList, resumeData]);
+
+    // 2. Check local sessionStorage for page refresh resilience
+    const savedLocalSession = sessionStorage.getItem(sessionKey);
+    if (savedLocalSession) {
+      try {
+        const parsed = JSON.parse(savedLocalSession);
+        if (parsed.savedQuestions && parsed.savedQuestions.length > 0) {
+          setShuffledQuestions(parsed.savedQuestions);
+          setCurrentIndex(parsed.currentIndex || 0);
+          setScore(parsed.score || 0);
+          setAnswers(parsed.answers || []);
+          return;
+        }
+      } catch (err) {}
+    }
+
+    // 3. Create a stable, randomized 30-question sequence
+    const baseList = questionsList.length > 0 ? questionsList : ABBREVIATION_QUESTIONS;
+    const shuffled = shuffleArray(baseList);
+    const target30 = shuffled.slice(0, 30);
+
+    setShuffledQuestions(target30);
+    setCurrentIndex(0);
+    setScore(0);
+    setAnswers([]);
+
+    sessionStorage.setItem(sessionKey, JSON.stringify({
+      savedQuestions: target30,
+      currentIndex: 0,
+      score: 0,
+      answers: []
+    }));
+  }, []);
+
+  // Save progress on question advance or score update
+  useEffect(() => {
+    if (!isInitializedRef.current || shuffledQuestions.length === 0 || isFinished) return;
+
+    const sessionObj = {
+      savedQuestions: shuffledQuestions,
+      currentIndex,
+      score,
+      answers
+    };
+    sessionStorage.setItem(sessionKey, JSON.stringify(sessionObj));
+
+    if (team?.id && onPauseGame) {
+      onPauseGame({
+        teamId: team.id,
+        teamName: team.teamName,
+        gameId: "abbrev_quiz",
+        gameTitle: "Abbreviation Speed Quiz",
+        currentIndex,
+        score,
+        savedState: sessionObj
+      });
+    }
+  }, [currentIndex, score, answers, shuffledQuestions, team, onPauseGame, isFinished, sessionKey]);
 
   const questions = shuffledQuestions.length > 0 ? shuffledQuestions : questionsList;
   const currentQ = questions[currentIndex];
@@ -65,25 +126,27 @@ export default function AbbreviationQuiz({
     );
   }
 
-  // Mid-game exit detection: trigger pause & request coordinator approval if tab hidden
+  // Mid-game exit detection
   useEffect(() => {
     if (isFinished) return;
 
     const handleVisibilityChange = () => {
       if (document.hidden && onPauseGame) {
         onPauseGame({
+          teamId: team?.id,
+          teamName: team?.teamName,
           gameId: "abbrev_quiz",
           gameTitle: "Abbreviation Speed Quiz",
           currentIndex,
           score,
-          savedState: { currentIndex, score, savedQuestions: questions }
+          savedState: { currentIndex, score, savedQuestions: questions, answers }
         });
       }
     };
 
     window.addEventListener("visibilitychange", handleVisibilityChange);
     return () => window.removeEventListener("visibilitychange", handleVisibilityChange);
-  }, [currentIndex, score, isFinished, onPauseGame, questions]);
+  }, [currentIndex, score, isFinished, onPauseGame, questions, answers, team]);
 
   const handleSelectOption = (index) => {
     if (selectedOption !== null) return;
@@ -118,10 +181,12 @@ export default function AbbreviationQuiz({
 
   const finishGame = () => {
     setIsFinished(true);
+    sessionStorage.removeItem(sessionKey);
   };
 
   const handleSubmitScore = () => {
     setIsSubmitted(true);
+    sessionStorage.removeItem(sessionKey);
     onCompleteQuiz({
       gameId: "abbrev_quiz",
       gameTitle: "Abbreviation Speed Quiz",

@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import {
   CheckCircle2, XCircle, Trophy, ArrowRight, Sparkles,
   Award, Lightbulb, BookOpen, Zap, Target, Lock
@@ -18,44 +18,100 @@ export default function FactFinderGame({ team, factsList = [], onCompleteGame, o
   const [shuffledFacts, setShuffledFacts] = useState([]);
   const [shuffledOptions, setShuffledOptions] = useState([]);
 
-  const [currentIndex, setCurrentIndex] = useState(resumeData?.currentIndex || 0);
+  const [currentIndex, setCurrentIndex] = useState(0);
   const [userChoice, setUserChoice] = useState(null);
-  const [score, setScore] = useState(resumeData?.score || 0);
+  const [score, setScore] = useState(0);
   const [isFinished, setIsFinished] = useState(false);
   const [isSubmitted, setIsSubmitted] = useState(false);
   const [showReveal, setShowReveal] = useState(false);
 
-  useEffect(() => {
-    if (!factsList || factsList.length === 0) return;
+  const isInitializedRef = useRef(false);
+  const sessionKey = `innovex_session_real_fake_img_${team?.id || "guest"}`;
 
+  // Initialize randomized 30-question session ONCE per active game
+  useEffect(() => {
+    if (isInitializedRef.current) return;
+    if (!factsList || factsList.length === 0) return;
+    isInitializedRef.current = true;
+
+    // 1. Check resumeData from Supabase
     if (resumeData?.savedState?.savedFacts && resumeData?.savedState?.savedOptions) {
       setShuffledFacts(resumeData.savedState.savedFacts);
       setShuffledOptions(resumeData.savedState.savedOptions);
       setCurrentIndex(resumeData.currentIndex || 0);
       setScore(resumeData.score || 0);
-    } else {
-      const shuffled = shuffleArray(factsList);
-      setShuffledFacts(shuffled);
-
-      // For each question, shuffle its 3 options
-      const options = shuffled.map((q) => {
-        const opts = [
-          { text: q.realFact, isReal: true },
-          { text: q.fakeFact1, isReal: false },
-          { text: q.fakeFact2, isReal: false }
-        ];
-        return shuffleArray(opts);
-      });
-      setShuffledOptions(options);
-
-      setCurrentIndex(0);
-      setUserChoice(null);
-      setScore(0);
-      setIsFinished(false);
-      setIsSubmitted(false);
-      setShowReveal(false);
+      return;
     }
-  }, [factsList, resumeData]);
+
+    // 2. Check local sessionStorage for page refresh resilience
+    const savedLocalSession = sessionStorage.getItem(sessionKey);
+    if (savedLocalSession) {
+      try {
+        const parsed = JSON.parse(savedLocalSession);
+        if (parsed.savedFacts && parsed.savedOptions && parsed.savedFacts.length > 0) {
+          setShuffledFacts(parsed.savedFacts);
+          setShuffledOptions(parsed.savedOptions);
+          setCurrentIndex(parsed.currentIndex || 0);
+          setScore(parsed.score || 0);
+          return;
+        }
+      } catch (err) {}
+    }
+
+    // 3. Create a stable, randomized 30-question sequence
+    const shuffled = shuffleArray(factsList);
+    const target30Facts = shuffled.slice(0, 30);
+
+    const options = target30Facts.map((q) => {
+      const opts = [
+        { text: q.realFact, isReal: true },
+        { text: q.fakeFact1, isReal: false },
+        { text: q.fakeFact2, isReal: false }
+      ];
+      return shuffleArray(opts);
+    });
+
+    setShuffledFacts(target30Facts);
+    setShuffledOptions(options);
+    setCurrentIndex(0);
+    setUserChoice(null);
+    setScore(0);
+    setIsFinished(false);
+    setIsSubmitted(false);
+    setShowReveal(false);
+
+    sessionStorage.setItem(sessionKey, JSON.stringify({
+      savedFacts: target30Facts,
+      savedOptions: options,
+      currentIndex: 0,
+      score: 0
+    }));
+  }, []);
+
+  // Save progress on question advance or score update
+  useEffect(() => {
+    if (!isInitializedRef.current || shuffledFacts.length === 0 || isFinished) return;
+
+    const sessionObj = {
+      savedFacts: shuffledFacts,
+      savedOptions: shuffledOptions,
+      currentIndex,
+      score
+    };
+    sessionStorage.setItem(sessionKey, JSON.stringify(sessionObj));
+
+    if (team?.id && onPauseGame) {
+      onPauseGame({
+        teamId: team.id,
+        teamName: team.teamName,
+        gameId: "real_fake_img",
+        gameTitle: "Fact Finder",
+        currentIndex,
+        score,
+        savedState: sessionObj
+      });
+    }
+  }, [currentIndex, score, shuffledFacts, shuffledOptions, team, onPauseGame, isFinished, sessionKey]);
 
   // Mid-game exit detection
   useEffect(() => {
@@ -64,6 +120,8 @@ export default function FactFinderGame({ team, factsList = [], onCompleteGame, o
     const handleVisibilityChange = () => {
       if (document.hidden && onPauseGame) {
         onPauseGame({
+          teamId: team?.id,
+          teamName: team?.teamName,
           gameId: "real_fake_img",
           gameTitle: "Fact Finder",
           currentIndex,
@@ -75,7 +133,7 @@ export default function FactFinderGame({ team, factsList = [], onCompleteGame, o
 
     window.addEventListener("visibilitychange", handleVisibilityChange);
     return () => window.removeEventListener("visibilitychange", handleVisibilityChange);
-  }, [currentIndex, score, isFinished, onPauseGame, shuffledFacts, shuffledOptions]);
+  }, [currentIndex, score, isFinished, onPauseGame, shuffledFacts, shuffledOptions, team]);
 
   if (shuffledFacts.length === 0) {
     return (
@@ -115,11 +173,13 @@ export default function FactFinderGame({ team, factsList = [], onCompleteGame, o
       setShowReveal(false);
     } else {
       setIsFinished(true);
+      sessionStorage.removeItem(sessionKey);
     }
   };
 
   const handleSubmitScore = () => {
     setIsSubmitted(true);
+    sessionStorage.removeItem(sessionKey);
     onCompleteGame({
       gameId: "real_fake_img",
       gameTitle: "Fact Finder",
