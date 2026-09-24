@@ -69,9 +69,21 @@ export async function updateGameLockState(gameId, isLocked) {
 export async function createCoordinatorInSupabase(coordData) {
   if (isSupabaseConfigured()) {
     try {
+      const rowToInsert = {
+        id: coordData.id,
+        name: coordData.name,
+        email: coordData.email,
+        password: coordData.password,
+        department: coordData.department || '',
+        assigned_games: coordData.assignedGames || coordData.assigned_games || ["abbrev_quiz", "real_fake_img"],
+        assigned_game_title: coordData.assignedGameTitle || coordData.assigned_game_title || "All Event Games",
+        role: "coordinator"
+      };
+
       const { data, error } = await supabase
         .from("coordinators")
-        .insert([coordData]);
+        .upsert([rowToInsert]);
+
       if (error) console.error("Supabase createCoordinator error:", error);
       return data;
     } catch (e) {
@@ -79,6 +91,49 @@ export async function createCoordinatorInSupabase(coordData) {
     }
   }
   return coordData;
+}
+
+/**
+ * Authenticate Coordinator against Supabase central database
+ */
+export async function authenticateCoordinatorInSupabase(loginId, password) {
+  if (isSupabaseConfigured()) {
+    try {
+      const { data, error } = await supabase
+        .from("coordinators")
+        .select("*");
+
+      if (!error && data) {
+        const cleanLoginId = loginId.trim().toLowerCase();
+        const cleanPassword = password.trim();
+
+        const matched = data.find((row) => {
+          const matchEmail = row.email && row.email.trim().toLowerCase() === cleanLoginId;
+          const matchId = row.id && row.id.trim().toLowerCase() === cleanLoginId;
+          const matchPass = row.password && row.password.trim() === cleanPassword;
+          return (matchEmail || matchId) && matchPass;
+        });
+
+        if (matched) {
+          return {
+            id: matched.id,
+            role: "coordinator",
+            roleTitle: "Event Coordinator",
+            name: matched.name,
+            email: matched.email,
+            password: matched.password,
+            department: matched.department,
+            assignedGames: matched.assigned_games || matched.assignedGames || ["abbrev_quiz", "real_fake_img"],
+            assignedGameTitle: matched.assigned_game_title || matched.assignedGameTitle || "All Event Games",
+            avatar: `https://api.dicebear.com/7.x/avataaars/svg?seed=${encodeURIComponent(matched.name)}`
+          };
+        }
+      }
+    } catch (e) {
+      console.warn("Supabase authenticateCoordinator error:", e);
+    }
+  }
+  return null;
 }
 
 /**
@@ -194,7 +249,16 @@ export async function fetchInitialSupabaseState() {
       await supabase.from("coordinators").upsert(INITIAL_COORDINATORS);
       coordList = INITIAL_COORDINATORS;
     }
-    state.coordinators = coordList;
+    state.coordinators = coordList.map((row) => ({
+      id: row.id,
+      name: row.name,
+      email: row.email,
+      password: row.password,
+      department: row.department,
+      assignedGames: row.assigned_games || row.assignedGames || ["abbrev_quiz", "real_fake_img"],
+      assignedGameTitle: row.assigned_game_title || row.assignedGameTitle || "All Event Games",
+      createdTime: row.created_at || row.createdTime || "Just now"
+    }));
 
     // Auto-seed Teams if empty in Supabase
     let teamsList = teamsRes.data || [];
@@ -445,7 +509,7 @@ export async function deleteCoordinatorFromSupabase(coordId) {
       const { data, error } = await supabase
         .from("coordinators")
         .delete()
-        .eq("id", coordId);
+        .or(`id.eq.${coordId},email.eq.${coordId}`);
       if (error) console.error("Supabase deleteCoordinator error:", error);
       return data;
     } catch (e) {

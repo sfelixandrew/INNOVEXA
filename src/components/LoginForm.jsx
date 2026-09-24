@@ -4,6 +4,7 @@ import {
   ShieldCheck, UserCheck, GraduationCap, Users, KeyRound
 } from "lucide-react";
 import { PRESET_ACCOUNTS } from "../data/mockUsers";
+import { authenticateCoordinatorInSupabase } from "../lib/supabase";
 import SelectMemberModal from "./SelectMemberModal";
 
 export default function LoginForm({
@@ -92,31 +93,50 @@ export default function LoginForm({
 
     // STRICT Coordinator Credentials Validation (Only Admin-Generated Coordinators Permitted)
     if (activeRole === "coordinator") {
-      const matchedCoord = coordinatorsList.find(
-        (c) => c.email.toLowerCase() === email.trim().toLowerCase() && c.password === password.trim()
-      );
-
-      if (!matchedCoord) {
-        setError("Invalid Coordinator User ID or Password. Only Admin-generated Coordinator accounts are permitted.");
-        return;
-      }
-
       setIsSubmitting(true);
-      setTimeout(() => {
-        setIsSubmitting(false);
-        onLoginSuccess({
-          id: matchedCoord.id,
-          role: "coordinator",
-          roleTitle: "Event Coordinator",
-          name: matchedCoord.name,
-          email: matchedCoord.email,
-          password: matchedCoord.password,
-          department: matchedCoord.department,
-          assignedGames: matchedCoord.assignedGames || ["abbrev_quiz", "real_fake_img"],
-          assignedGameTitle: matchedCoord.assignedGameTitle || "Allocated Event Games",
-          avatar: `https://api.dicebear.com/7.x/avataaars/svg?seed=${encodeURIComponent(matchedCoord.name)}`
+      setError("");
+
+      authenticateCoordinatorInSupabase(email, password).then((supabaseUser) => {
+        if (supabaseUser) {
+          setIsSubmitting(false);
+          onLoginSuccess(supabaseUser);
+          return;
+        }
+
+        // Fallback check against in-memory coordinatorsList
+        const cleanLoginId = email.trim().toLowerCase();
+        const cleanPassword = password.trim();
+
+        const matchedCoord = coordinatorsList.find((c) => {
+          const matchEmail = c.email && c.email.trim().toLowerCase() === cleanLoginId;
+          const matchId = c.id && c.id.trim().toLowerCase() === cleanLoginId;
+          const matchPass = c.password && c.password.trim() === cleanPassword;
+          return (matchEmail || matchId) && matchPass;
         });
-      }, 600);
+
+        if (matchedCoord) {
+          setIsSubmitting(false);
+          onLoginSuccess({
+            id: matchedCoord.id,
+            role: "coordinator",
+            roleTitle: "Event Coordinator",
+            name: matchedCoord.name,
+            email: matchedCoord.email,
+            password: matchedCoord.password,
+            department: matchedCoord.department,
+            assignedGames: matchedCoord.assignedGames || ["abbrev_quiz", "real_fake_img"],
+            assignedGameTitle: matchedCoord.assignedGameTitle || "Allocated Event Games",
+            avatar: `https://api.dicebear.com/7.x/avataaars/svg?seed=${encodeURIComponent(matchedCoord.name)}`
+          });
+          return;
+        }
+
+        setIsSubmitting(false);
+        setError("Invalid Coordinator User ID or Password. Only Admin-generated Coordinator accounts are permitted.");
+      }).catch(() => {
+        setIsSubmitting(false);
+        setError("Authentication error. Please try again.");
+      });
     }
   };
 

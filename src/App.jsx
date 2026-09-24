@@ -191,6 +191,9 @@ export default function App() {
       case "LEADERBOARD_SYNC":
         setLeaderboard(payload);
         break;
+      case "COORDINATORS_SYNC":
+        setCoordinators(payload);
+        break;
       case "STUDENT_TEAMS_SYNC":
         setStudentTeams(payload);
         break;
@@ -569,17 +572,25 @@ export default function App() {
   };
 
   const handleCreateCoordinator = async (newCoord) => {
-    setCoordinators((prev) => [newCoord, ...prev]);
+    setCoordinators((prev) => {
+      const updated = [newCoord, ...prev];
+      broadcastEvent("COORDINATORS_SYNC", updated);
+      return updated;
+    });
     await createCoordinatorInSupabase(newCoord);
     showToast(`Created Coordinator: ${newCoord.name} (${newCoord.email})!`);
   };
 
   const handleDeleteCoordinator = async (coordId) => {
-    const coordToDelete = coordinators.find((c) => c.id === coordId);
+    const coordToDelete = coordinators.find((c) => c.id === coordId || c.email === coordId);
     if (!coordToDelete) return;
 
     if (window.confirm(`Revoke login credentials for Coordinator ${coordToDelete.name} (${coordToDelete.email})?\n\nNote: All created questions, options, marks, and security locks will remain 100% UNCHANGED and preserved in the Coordinator Panel.`)) {
-      setCoordinators((prev) => prev.filter((c) => c.id !== coordId));
+      setCoordinators((prev) => {
+        const updated = prev.filter((c) => c.id !== coordId && c.email !== coordId);
+        broadcastEvent("COORDINATORS_SYNC", updated);
+        return updated;
+      });
       await deleteCoordinatorFromSupabase(coordId);
       showToast(`Revoked credentials for ${coordToDelete.name}. Created questions & locks remain preserved!`);
     }
