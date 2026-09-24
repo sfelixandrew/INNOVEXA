@@ -1160,7 +1160,7 @@ export default function App() {
 
       <TeamModal
         isOpen={isTeamModalOpen}
-        user={loggedInUser || { name: "Student Player" }}
+        user={loggedInUser || { name: "Team Member" }}
         onClose={() => setIsTeamModalOpen(false)}
         onSaveTeam={handleSaveTeam}
       />

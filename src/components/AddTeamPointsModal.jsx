@@ -28,10 +28,9 @@ export default function AddTeamPointsModal({
   // 1. Download Excel Template for Admin
   const handleDownloadTemplate = () => {
     const templateData = [
-      { "Team Name": "Cyber Knights", "Points": 50, "Notes": "Round 1 Bonus" },
-      { "Team Name": "Quantum Lynx", "Points": 75, "Notes": "Innovation Award" },
-      { "Team Name": "Vortex Hackers", "Points": 40, "Notes": "Speed Completion" },
-      { "Team Name": "Jarvis Alpha", "Points": 100, "Notes": "Master Challenge" }
+      { "Team Name": "Team Alpha", "Points": 50, "Notes": "Round 1 Bonus" },
+      { "Team Name": "Team Beta", "Points": 75, "Notes": "Innovation Award" },
+      { "Team Name": "Team Gamma", "Points": 40, "Notes": "Speed Completion" }
     ];
 
     const worksheet = XLSX.utils.json_to_sheet(templateData);

@@ -133,7 +133,7 @@ export default function CreateStudentTeamModal({
             <input
               type="text"
               className="form-input"
-              placeholder="e.g. Quantum Racers, Cyber Knights"
+              placeholder="e.g. Team Alpha, Tech Warriors"
               value={teamName}
               onChange={(e) => setTeamName(e.target.value)}
             />
@@ -145,7 +145,7 @@ export default function CreateStudentTeamModal({
             <input
               type="text"
               className="form-input"
-              placeholder="e.g. Alex Stark (Leader)"
+              placeholder="e.g. Member 1 (Leader)"
               value={leaderName}
               onChange={(e) => setLeaderName(e.target.value)}
             />
@@ -157,7 +157,7 @@ export default function CreateStudentTeamModal({
             <input
               type="text"
               className="form-input"
-              placeholder="e.g. Elena Rostova"
+              placeholder="e.g. Member 2 Name"
               value={member2Name}
               onChange={(e) => setMember2Name(e.target.value)}
             />
@@ -169,7 +169,7 @@ export default function CreateStudentTeamModal({
             <input
               type="text"
               className="form-input"
-              placeholder="e.g. Marcus Brody"
+              placeholder="e.g. Member 3 Name"
               value={member3Name}
               onChange={(e) => setMember3Name(e.target.value)}
             />

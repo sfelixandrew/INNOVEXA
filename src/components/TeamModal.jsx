@@ -22,7 +22,7 @@ export default function TeamModal({ isOpen, onClose, user, onSaveTeam }) {
       teamName: teamName.trim(),
       teamCode: generatedCode,
       role: "Team Leader",
-      members: [user.name || "Student Player"]
+      members: [user?.name || "Team Member"]
     };
 
     onSaveTeam(teamObj);
@@ -41,7 +41,7 @@ export default function TeamModal({ isOpen, onClose, user, onSaveTeam }) {
       teamName: `Team ${teamCodeInput.toUpperCase()}`,
       teamCode: teamCodeInput.trim().toUpperCase(),
       role: "Member",
-      members: ["Teammate Leader", user.name || "Student Player"]
+      members: ["Team Leader", user?.name || "Team Member"]
     };
 
     onSaveTeam(teamObj);
