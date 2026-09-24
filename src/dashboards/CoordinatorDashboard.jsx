@@ -267,7 +267,7 @@ export default function CoordinatorDashboard({
           </div>
         </div>
 
-        <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(320px, 1fr))", gap: "1rem" }}>
+        <div className="responsive-grid-2">
           {assignedGames.map((gameId) => {
             const title = gameTitles[gameId] || (gameId === "abbrev_quiz" ? "Abbreviation Speed Quiz" : "AI vs Real Image Detector");
             const isLockedByAdmin = gameLocks[gameId];
@@ -459,7 +459,7 @@ export default function CoordinatorDashboard({
 
       {/* Track Tab Switcher */}
       {hasQuiz && hasImg && (
-        <div style={{ display: "flex", gap: "0.75rem", marginBottom: "1.5rem" }}>
+        <div className="responsive-action-row" style={{ marginBottom: "1.5rem" }}>
           <button
             type="button"
             className="btn-primary"
@@ -559,7 +559,7 @@ export default function CoordinatorDashboard({
                   </div>
                 </div>
 
-                <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "0.6rem", fontSize: "0.85rem" }}>
+                <div className="responsive-grid-2" style={{ fontSize: "0.85rem" }}>
                   {q.options.map((opt, oIdx) => (
                     <div
                       key={oIdx}

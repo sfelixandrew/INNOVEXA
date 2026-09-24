@@ -99,7 +99,7 @@ export default function QuestionEditorModal({ isOpen, onClose, editingQuestion, 
             />
           </div>
 
-          <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "1rem" }} className="form-group">
+          <div className="responsive-grid-2 form-group">
             <div>
               <label className="form-label">Option A</label>
               <input
@@ -127,7 +127,7 @@ export default function QuestionEditorModal({ isOpen, onClose, editingQuestion, 
             </div>
           </div>
 
-          <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "1rem" }} className="form-group">
+          <div className="responsive-grid-2 form-group">
             <div>
               <label className="form-label">Option C</label>
               <input
@@ -155,7 +155,7 @@ export default function QuestionEditorModal({ isOpen, onClose, editingQuestion, 
             </div>
           </div>
 
-          <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "1rem" }} className="form-group">
+          <div className="responsive-grid-2 form-group">
             <div>
               <label className="form-label">Correct Option Answer</label>
               <select

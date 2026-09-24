@@ -400,7 +400,7 @@ export default function StudentDashboard({
         <span>Playable Event Competitions</span>
       </h3>
 
-      <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "1.5rem", marginBottom: "2rem" }}>
+      <div className="responsive-grid-2" style={{ marginBottom: "2rem" }}>
         {/* Game 1 Card */}
         {(() => {
           const isLockedByAdmin = gameLocks.abbrev_quiz;

@@ -82,7 +82,7 @@ export default function Scoreboard({ leaderboardData, onOpenAddPointsModal }) {
         </div>
       ) : (
         /* Leaderboard Table */
-        <div style={{ overflowX: "auto" }}>
+        <div className="responsive-table-container">
           <table style={{ width: "100%", borderCollapse: "collapse", textAlign: "left", fontSize: "0.88rem" }}>
             <thead>
               <tr style={{ borderBottom: "1px solid var(--border-dark)", color: "var(--text-dark-secondary)", fontSize: "0.78rem", textTransform: "uppercase" }}>

@@ -28,7 +28,7 @@ export default function TeamProgressWidget({ leaderboardData, gameTitles = {} })
         </span>
       </div>
 
-      <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "1.25rem" }}>
+      <div className="responsive-grid-2">
         {/* Game 1 Progress Meter */}
         <div style={{ padding: "1.25rem", borderRadius: "14px", background: "rgba(255, 255, 255, 0.03)", border: "1px solid var(--border-dark)" }}>
           <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "0.5rem" }}>

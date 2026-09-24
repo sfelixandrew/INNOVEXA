@@ -118,7 +118,7 @@ export default function AttendanceSheetModal({ isOpen, onClose, leaderboardData 
         </div>
 
         {/* Printable Attendance Sheet Table */}
-        <div style={{ overflowX: "auto", maxHeight: "440px", overflowY: "auto" }}>
+        <div className="responsive-table-container" style={{ maxHeight: "440px", overflowY: "auto" }}>
           <table style={{ width: "100%", borderCollapse: "collapse", textAlign: "left", fontSize: "0.88rem" }}>
             <thead>
               <tr style={{ borderBottom: "1px solid var(--border-dark)", color: "var(--text-dark-secondary)", fontSize: "0.78rem", textTransform: "uppercase", background: "rgba(15, 23, 42, 0.8)", sticky: "top" }}>

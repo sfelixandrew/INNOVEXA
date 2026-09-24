@@ -899,3 +899,262 @@ body.theme-light .stat-value {
   text-transform: uppercase;
 }
 
+/* ========================================================
+   RESPONSIVE LAYOUT FRAMEWORK (PC, TABLET, MOBILE)
+   ======================================================== */
+
+/* Responsive Grid Utilities */
+.responsive-grid-2 {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 1.25rem;
+}
+
+.responsive-grid-3 {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 1.25rem;
+}
+
+.responsive-action-row {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  flex-wrap: wrap;
+}
+
+.responsive-table-container {
+  width: 100%;
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+  margin-top: 0.5rem;
+  border-radius: 12px;
+}
+
+.responsive-table-container table {
+  min-width: 640px;
+}
+
+.workflow-grid {
+  display: grid;
+  grid-template-columns: 1fr auto 1fr auto 1fr;
+  gap: 1rem;
+  align-items: center;
+}
+
+.workflow-arrow {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+/* Scrollable Modal Content */
+.modal-content {
+  max-height: 90vh;
+  max-height: 90dvh;
+  overflow-y: auto;
+}
+
+/* Custom Scrollbar for Sci-Fi HUD Cards & Modals */
+.modal-content::-webkit-scrollbar,
+.responsive-table-container::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+
+.modal-content::-webkit-scrollbar-track,
+.responsive-table-container::-webkit-scrollbar-track {
+  background: rgba(3, 7, 18, 0.5);
+  border-radius: 4px;
+}
+
+.modal-content::-webkit-scrollbar-thumb,
+.responsive-table-container::-webkit-scrollbar-thumb {
+  background: var(--role-primary, #00f0ff);
+  border-radius: 4px;
+}
+
+/* --------------------------------------------------------
+   MEDIA QUERIES FOR TABLET & LAPTOP (Max Width: 1024px)
+   -------------------------------------------------------- */
+@media (max-width: 1024px) {
+  .dashboard-container {
+    padding: 1.5rem 1rem;
+  }
+
+  .top-navbar {
+    padding: 1rem 1.5rem;
+  }
+
+  .workflow-grid {
+    grid-template-columns: 1fr;
+    gap: 0.75rem;
+  }
+
+  .workflow-arrow {
+    transform: rotate(90deg);
+    margin: 0.25rem 0;
+  }
+}
+
+/* --------------------------------------------------------
+   MEDIA QUERIES FOR MOBILE SMARTPHONES (Max Width: 767px)
+   -------------------------------------------------------- */
+@media (max-width: 767px) {
+  .responsive-grid-2,
+  .responsive-grid-3 {
+    grid-template-columns: 1fr !important;
+    gap: 1rem;
+  }
+
+  .top-navbar {
+    padding: 0.85rem 1rem;
+    flex-wrap: wrap;
+    justify-content: center;
+    gap: 0.75rem;
+    text-align: center;
+  }
+
+  .brand-logo {
+    font-size: 1.15rem;
+    justify-content: center;
+  }
+
+  .logo-icon {
+    width: 32px;
+    height: 32px;
+  }
+
+  .nav-actions {
+    width: 100%;
+    justify-content: center;
+    flex-wrap: wrap;
+    gap: 0.5rem;
+  }
+
+  .dashboard-container {
+    padding: 1rem 0.75rem;
+  }
+
+  .dashboard-header {
+    flex-direction: column;
+    align-items: center;
+    text-align: center;
+    gap: 1.25rem;
+    padding: 1.25rem 1rem !important;
+  }
+
+  .user-profile-badge {
+    flex-direction: column;
+    text-align: center;
+    align-items: center;
+  }
+
+  .user-profile-badge h2 {
+    font-size: 1.15rem !important;
+  }
+
+  .role-tabs {
+    flex-direction: column;
+    gap: 6px;
+  }
+
+  .role-tab-btn {
+    width: 100%;
+    padding: 0.7rem 0.75rem;
+    font-size: 0.85rem;
+  }
+
+  .auth-wrapper {
+    padding: 1.25rem 0.75rem;
+  }
+
+  .auth-container {
+    max-width: 100%;
+  }
+
+  .glass-card {
+    padding: 1.25rem !important;
+    border-radius: 18px;
+  }
+
+  .modal-overlay {
+    padding: 0.75rem;
+    align-items: flex-start;
+  }
+
+  .modal-content {
+    padding: 1.25rem 1rem !important;
+    max-height: 86vh;
+    max-height: 86dvh;
+    border-radius: 16px;
+  }
+
+  .btn-primary {
+    min-height: 44px;
+    padding: 0.75rem 1rem;
+    font-size: 0.88rem;
+  }
+
+  .responsive-action-row {
+    flex-direction: column;
+    align-items: stretch;
+    width: 100%;
+  }
+
+  .responsive-action-row button {
+    width: 100%;
+    justify-content: center;
+  }
+
+  .otp-inputs {
+    gap: 0.35rem;
+  }
+
+  .otp-box {
+    width: 40px;
+    height: 48px;
+    font-size: 1.2rem;
+  }
+
+  .quick-drawer-toggle {
+    bottom: 1rem;
+    right: 1rem;
+    padding: 0.75rem 1.1rem;
+    font-size: 0.82rem;
+  }
+
+  .stats-grid {
+    grid-template-columns: 1fr !important;
+    gap: 1rem;
+  }
+}
+
+/* --------------------------------------------------------
+   MEDIA QUERIES FOR SMALL MOBILE SCREENS (Max Width: 480px)
+   -------------------------------------------------------- */
+@media (max-width: 480px) {
+  .login-title {
+    font-size: 1.35rem !important;
+  }
+
+  .arc-reactor-container {
+    width: 70px;
+    height: 70px;
+  }
+
+  .arc-reactor-core {
+    inset: 16px;
+  }
+
+  .otp-inputs {
+    gap: 0.25rem;
+  }
+
+  .otp-box {
+    width: 34px;
+    height: 42px;
+    font-size: 1.1rem;
+    border-radius: 8px;
+  }
+}

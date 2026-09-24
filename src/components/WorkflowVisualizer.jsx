@@ -27,7 +27,7 @@ export default function WorkflowVisualizer({
       </div>
 
       {/* Workflow Pipeline Diagram */}
-      <div style={{ display: "grid", gridTemplateColumns: "1fr auto 1fr auto 1fr", gap: "1rem", alignItems: "center" }}>
+      <div className="workflow-grid">
         {/* Stage 1: Admin Authority */}
         <div style={{ padding: "1.1rem", borderRadius: "14px", background: activeRole === "admin" ? "rgba(79, 70, 229, 0.15)" : "rgba(255,255,255,0.03)", border: activeRole === "admin" ? "2px solid #4F46E5" : "1px solid var(--border-dark)" }}>
           <div style={{ display: "flex", alignItems: "center", gap: "0.5rem", marginBottom: "0.4rem" }}>
@@ -41,7 +41,9 @@ export default function WorkflowVisualizer({
           </div>
         </div>
 
-        <ArrowRight size={20} color="var(--role-primary)" />
+        <div className="workflow-arrow">
+          <ArrowRight size={20} color="var(--role-primary)" />
+        </div>
 
         {/* Stage 2: Coordinator Operations */}
         <div style={{ padding: "1.1rem", borderRadius: "14px", background: activeRole === "coordinator" ? "rgba(16, 185, 129, 0.15)" : "rgba(255,255,255,0.03)", border: activeRole === "coordinator" ? "2px solid #10B981" : "1px solid var(--border-dark)" }}>
@@ -56,7 +58,9 @@ export default function WorkflowVisualizer({
           </div>
         </div>
 
-        <ArrowRight size={20} color="var(--role-primary)" />
+        <div className="workflow-arrow">
+          <ArrowRight size={20} color="var(--role-primary)" />
+        </div>
 
         {/* Stage 3: Student Competition */}
         <div style={{ padding: "1.1rem", borderRadius: "14px", background: activeRole === "student" ? "rgba(59, 130, 246, 0.15)" : "rgba(255,255,255,0.03)", border: activeRole === "student" ? "2px solid #3B82F6" : "1px solid var(--border-dark)" }}>

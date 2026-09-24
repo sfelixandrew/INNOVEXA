@@ -80,7 +80,7 @@ export default function AdminDashboard({
         </div>
 
         {/* Action Buttons Row */}
-        <div style={{ display: "flex", alignItems: "center", gap: "0.75rem", flexWrap: "wrap" }}>
+        <div className="responsive-action-row">
           <button
             type="button"
             className="btn-primary"
@@ -258,7 +258,7 @@ export default function AdminDashboard({
           </button>
         </div>
 
-        <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "1.25rem" }}>
+        <div className="responsive-grid-2">
           {/* Game 1 Lock Box */}
           <div
             style={{
@@ -364,7 +364,7 @@ export default function AdminDashboard({
             No coordinator accounts provisioned yet. Click "Generate New Coordinator" to create credentials.
           </div>
         ) : (
-          <div style={{ overflowX: "auto" }}>
+          <div className="responsive-table-container">
             <table style={{ width: "100%", borderCollapse: "collapse", textAlign: "left", fontSize: "0.88rem" }}>
               <thead>
                 <tr style={{ borderBottom: "1px solid var(--border-dark)", color: "#94A3B8", fontSize: "0.78rem", textTransform: "uppercase" }}>
@@ -455,7 +455,7 @@ export default function AdminDashboard({
             No student teams provisioned yet. Click "+ Generate Student Team & Code" to create team credentials.
           </div>
         ) : (
-          <div style={{ overflowX: "auto" }}>
+          <div className="responsive-table-container">
             <table style={{ width: "100%", borderCollapse: "collapse", textAlign: "left", fontSize: "0.88rem" }}>
               <thead>
                 <tr style={{ borderBottom: "1px solid rgba(0, 240, 255, 0.2)", color: "#7dd3fc", fontSize: "0.78rem", textTransform: "uppercase" }}>
