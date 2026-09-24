@@ -96,9 +96,9 @@ export default function CreateCoordinatorModal({ isOpen, onClose, onCreateCoordi
 
           <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "1rem" }} className="form-group">
             <div>
-              <label className="form-label">Generated Email ID</label>
+              <label className="form-label">Generated Coordinator ID / Email</label>
               <input
-                type="email"
+                type="text"
                 required
                 className="form-input"
                 placeholder="coord@innov.edu"

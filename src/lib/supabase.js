@@ -7,22 +7,24 @@ import {
   INITIAL_LEADERBOARD
 } from "../data/mockUsers";
 
-// Retrieve environment variables or use safe fallback placeholders
-const supabaseUrl = import.meta.env.VITE_SUPABASE_URL || "https://xyz-mock-project.supabase.co";
-const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY || "mock-anon-key-123456789";
+// Production Supabase central project configuration
+const DEFAULT_SUPABASE_URL = "https://rlixjwtndpxvrnxbnjfg.supabase.co";
+const DEFAULT_SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InJsaXhqd3RuZHB4dnJueGJuamZnIiwicm9sZSI6ImFub24iLCJpYXQiOjE3OTAwMDU5ODksImV4cCI6MjEwNTU4MTk4OX0.GYm495IMh1gseuz16YViGEjQpw_d0RSfGuxblSy5WBE";
+
+const supabaseUrl = import.meta.env.VITE_SUPABASE_URL || DEFAULT_SUPABASE_URL;
+const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY || DEFAULT_SUPABASE_ANON_KEY;
 
 // Initialize Supabase Client
 export const supabase = createClient(supabaseUrl, supabaseAnonKey);
 
 /**
  * Helper to check if live Supabase environment variables are connected.
- * If not connected, the application gracefully falls back to interactive state management.
  */
 export const isSupabaseConfigured = () => {
   return (
-    import.meta.env.VITE_SUPABASE_URL &&
-    import.meta.env.VITE_SUPABASE_ANON_KEY &&
-    !import.meta.env.VITE_SUPABASE_URL.includes("xyz-mock-project")
+    Boolean(supabaseUrl) &&
+    Boolean(supabaseAnonKey) &&
+    !supabaseUrl.includes("xyz-mock-project")
   );
 };
 

@@ -280,32 +280,45 @@ export default function App() {
         })
         .subscribe();
 
+      const handleSyncRefresh = () => {
+        fetchInitialSupabaseState().then((dbState) => {
+          if (!dbState) return;
+          if (dbState.gameLocks) setGameLocks((prev) => ({ ...prev, ...dbState.gameLocks }));
+          if (dbState.coordinators !== undefined) setCoordinators(dbState.coordinators);
+          if (dbState.studentTeams !== undefined) setStudentTeams(dbState.studentTeams);
+          if (dbState.quizQuestions) setQuizQuestions(dbState.quizQuestions);
+          if (dbState.factQuestions) setRealFakeImages(dbState.factQuestions);
+          if (dbState.leaderboard !== undefined) setLeaderboard(dbState.leaderboard);
+        });
+        fetchGameResumesFromSupabase().then((resumesData) => {
+          if (resumesData) setGameResumes(resumesData);
+        });
+      };
+
       // Direct Postgres Database Table Changes Realtime Subscription
       const dbChangesChannel = supabase
         .channel("db_changes_room")
         .on(
           "postgres_changes",
           { event: "*", schema: "public" },
-          () => {
-            fetchInitialSupabaseState().then((dbState) => {
-              if (!dbState) return;
-              if (dbState.gameLocks) setGameLocks((prev) => ({ ...prev, ...dbState.gameLocks }));
-              if (dbState.coordinators !== undefined) setCoordinators(dbState.coordinators);
-              if (dbState.studentTeams !== undefined) setStudentTeams(dbState.studentTeams);
-              if (dbState.quizQuestions) setQuizQuestions(dbState.quizQuestions);
-              if (dbState.factQuestions) setRealFakeImages(dbState.factQuestions);
-              if (dbState.leaderboard !== undefined) setLeaderboard(dbState.leaderboard);
-            });
-            fetchGameResumesFromSupabase().then((resumesData) => {
-              if (resumesData) setGameResumes(resumesData);
-            });
-          }
+          handleSyncRefresh
         )
         .subscribe();
+
+      // Offline & Reconnect State Recovery Listeners
+      window.addEventListener("online", handleSyncRefresh);
+      const handleVisibilityChange = () => {
+        if (document.visibilityState === "visible") {
+          handleSyncRefresh();
+        }
+      };
+      document.addEventListener("visibilitychange", handleVisibilityChange);
 
       return () => {
         supabase.removeChannel(room);
         supabase.removeChannel(dbChangesChannel);
+        window.removeEventListener("online", handleSyncRefresh);
+        document.removeEventListener("visibilitychange", handleVisibilityChange);
       };
     } catch (e) {
       console.warn("Supabase realtime subscribe error:", e);
