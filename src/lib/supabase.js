@@ -1,4 +1,11 @@
 import { createClient } from "@supabase/supabase-js";
+import {
+  INITIAL_COORDINATORS,
+  INITIAL_STUDENT_TEAMS,
+  ABBREVIATION_QUESTIONS,
+  FACT_FINDER_QUESTIONS,
+  INITIAL_LEADERBOARD
+} from "../data/mockUsers";
 
 // Retrieve environment variables or use safe fallback placeholders
 const supabaseUrl = import.meta.env.VITE_SUPABASE_URL || "https://xyz-mock-project.supabase.co";
@@ -140,7 +147,8 @@ export async function saveTeamToSupabase(teamRecord) {
           team_name: teamRecord.teamName,
           team_code: teamRecord.teamCode,
           leader_name: teamRecord.leaderName,
-          members: teamRecord.members,
+          members: teamRecord.members || [],
+          active_logins: teamRecord.activeLogins || teamRecord.active_logins || [],
           created_time: teamRecord.createdTime || new Date().toISOString(),
           status: teamRecord.status || 'Active',
           is_blocked: teamRecord.isBlocked || false,
@@ -180,71 +188,151 @@ export async function fetchInitialSupabaseState() {
 
     const state = {};
 
+    // Auto-seed Coordinators if empty in Supabase
+    let coordList = coordinatorsRes.data || [];
+    if (coordList.length === 0 && INITIAL_COORDINATORS.length > 0) {
+      await supabase.from("coordinators").upsert(INITIAL_COORDINATORS);
+      coordList = INITIAL_COORDINATORS;
+    }
+    state.coordinators = coordList;
+
+    // Auto-seed Teams if empty in Supabase
+    let teamsList = teamsRes.data || [];
+    if (teamsList.length === 0 && INITIAL_STUDENT_TEAMS.length > 0) {
+      const rowsToInsert = INITIAL_STUDENT_TEAMS.map((t) => ({
+        id: t.id,
+        team_name: t.teamName,
+        team_code: t.teamCode,
+        leader_name: t.leaderName,
+        members: t.members,
+        active_logins: t.activeLogins || [],
+        created_time: t.createdTime || new Date().toISOString(),
+        status: t.status || 'Active',
+        is_blocked: t.isBlocked || false,
+        penalty: t.penalty || 0
+      }));
+      await supabase.from("teams").upsert(rowsToInsert);
+      teamsList = rowsToInsert;
+    }
+    state.studentTeams = teamsList.map((row) => ({
+      id: row.id,
+      teamName: row.team_name || row.teamName,
+      teamCode: row.team_code || row.teamCode,
+      leaderName: row.leader_name || row.leaderName,
+      members: row.members || [],
+      activeLogins: row.active_logins || row.activeLogins || [],
+      createdTime: row.created_time || row.createdTime,
+      status: row.status,
+      isBlocked: row.is_blocked || row.isBlocked || false,
+      penalty: row.penalty || 0
+    }));
+
+    // Auto-seed Quiz Questions if empty in Supabase
+    let quizList = quizQuestionsRes.data || [];
+    if (quizList.length === 0 && ABBREVIATION_QUESTIONS.length > 0) {
+      const rowsToInsert = ABBREVIATION_QUESTIONS.map((q) => ({
+        id: String(q.id),
+        question: q.question,
+        options: q.options,
+        correct: q.correct,
+        explanation: q.explanation,
+        marks: q.marks || 10
+      }));
+      await supabase.from("quiz_questions").upsert(rowsToInsert);
+      quizList = rowsToInsert;
+    }
+    state.quizQuestions = quizList.map((q) => ({
+      id: q.id,
+      question: q.question,
+      options: q.options,
+      correct: q.correct,
+      explanation: q.explanation,
+      marks: q.marks
+    }));
+
+    // Auto-seed Fact Questions if empty in Supabase
+    let factList = factQuestionsRes.data || [];
+    if (factList.length === 0 && FACT_FINDER_QUESTIONS.length > 0) {
+      const rowsToInsert = FACT_FINDER_QUESTIONS.map((f) => ({
+        id: String(f.id),
+        question: f.question,
+        real_fact: f.realFact,
+        fake_fact1: f.fakeFact1,
+        fake_fact2: f.fakeFact2,
+        explanation: f.explanation,
+        marks: f.marks || 10,
+        category: f.category || 'General'
+      }));
+      await supabase.from("fact_finder_questions").upsert(rowsToInsert);
+      factList = rowsToInsert;
+    }
+    state.factQuestions = factList.map((row) => ({
+      id: row.id,
+      question: row.question,
+      realFact: row.real_fact || row.realFact,
+      fakeFact1: row.fake_fact1 || row.fakeFact1,
+      fakeFact2: row.fake_fact2 || row.fakeFact2,
+      explanation: row.explanation,
+      marks: row.marks,
+      category: row.category
+    }));
+
+    // Auto-seed Leaderboard if empty in Supabase
+    let lbList = leaderboardRes.data || [];
+    if (lbList.length === 0 && INITIAL_LEADERBOARD.length > 0) {
+      const rowsToInsert = INITIAL_LEADERBOARD.map((t) => ({
+        team_id: t.teamId,
+        team_name: t.teamName,
+        team_code: t.teamCode,
+        leader_name: t.leaderName,
+        members: t.members,
+        active_logins: t.activeLogins || [],
+        abbrev_score: t.abbrevScore || 0,
+        image_score: t.imageScore || 0,
+        abbrev_completed: t.abbrevCompleted || false,
+        image_completed: t.imageCompleted || false,
+        bonus_score: t.bonusScore || 0,
+        penalty: t.penalty || 0,
+        total_score: t.totalScore || 0,
+        time_seconds: t.timeSeconds || 0,
+        last_played: t.lastPlayed || 'Just now',
+        status: t.status || 'Present',
+        member_attendance: t.memberAttendance || {},
+        registration_time: t.registrationTime || 'Just now',
+        updated_at: new Date().toISOString()
+      }));
+      await supabase.from("leaderboard").upsert(rowsToInsert);
+      lbList = rowsToInsert;
+    }
+    state.leaderboard = lbList.map((row, idx) => ({
+      sNo: idx + 1,
+      rank: idx + 1,
+      teamId: row.team_id || row.teamId,
+      teamName: row.team_name || row.teamName,
+      teamCode: row.team_code || row.teamCode,
+      leaderName: row.leader_name || row.leaderName,
+      members: row.members || [],
+      activeLogins: row.active_logins || row.activeLogins || [],
+      abbrevScore: row.abbrev_score !== undefined ? row.abbrev_score : row.abbrevScore || 0,
+      imageScore: row.image_score !== undefined ? row.image_score : row.imageScore || 0,
+      abbrevCompleted: row.abbrev_completed !== undefined ? row.abbrev_completed : row.abbrevCompleted || false,
+      imageCompleted: row.image_completed !== undefined ? row.image_completed : row.imageCompleted || false,
+      bonusScore: row.bonus_score !== undefined ? row.bonus_score : row.bonusScore || 0,
+      penalty: row.penalty !== undefined ? row.penalty : row.penalty || 0,
+      totalScore: row.total_score !== undefined ? row.total_score : row.totalScore || 0,
+      timeSeconds: row.time_seconds !== undefined ? row.time_seconds : row.timeSeconds || 0,
+      lastPlayed: row.last_played || row.lastPlayed || 'Just now',
+      status: row.status || 'Present',
+      memberAttendance: row.member_attendance || row.memberAttendance || {},
+      registrationTime: row.registration_time || row.registrationTime || 'Just now'
+    }));
+
     if (gameLocksRes.data && gameLocksRes.data.length > 0) {
       const locksMap = {};
       gameLocksRes.data.forEach((row) => {
         locksMap[row.game_id] = row.is_locked;
       });
       state.gameLocks = locksMap;
-    }
-
-    if (coordinatorsRes.data && coordinatorsRes.data.length > 0) {
-      state.coordinators = coordinatorsRes.data;
-    }
-
-    if (teamsRes.data && teamsRes.data.length > 0) {
-      state.studentTeams = teamsRes.data.map((row) => ({
-        id: row.id,
-        teamName: row.team_name,
-        teamCode: row.team_code,
-        leaderName: row.leader_name,
-        members: row.members || [],
-        createdTime: row.created_time,
-        status: row.status,
-        isBlocked: row.is_blocked,
-        penalty: row.penalty
-      }));
-    }
-
-    if (quizQuestionsRes.data && quizQuestionsRes.data.length > 0) {
-      state.quizQuestions = quizQuestionsRes.data;
-    }
-
-    if (factQuestionsRes.data && factQuestionsRes.data.length > 0) {
-      state.factQuestions = factQuestionsRes.data.map((row) => ({
-        id: row.id,
-        question: row.question,
-        realFact: row.real_fact,
-        fakeFact1: row.fake_fact1,
-        fakeFact2: row.fake_fact2,
-        explanation: row.explanation,
-        marks: row.marks,
-        category: row.category
-      }));
-    }
-
-    if (leaderboardRes.data && leaderboardRes.data.length > 0) {
-      state.leaderboard = leaderboardRes.data.map((row) => ({
-        sNo: 1,
-        rank: 1,
-        teamId: row.team_id,
-        teamName: row.team_name,
-        teamCode: row.team_code,
-        leaderName: row.leader_name,
-        members: row.members || [],
-        abbrevScore: row.abbrev_score || 0,
-        imageScore: row.image_score || 0,
-        abbrevCompleted: row.abbrev_completed || false,
-        imageCompleted: row.image_completed || false,
-        bonusScore: row.bonus_score || 0,
-        penalty: row.penalty || 0,
-        totalScore: row.total_score || 0,
-        timeSeconds: row.time_seconds || 0,
-        lastPlayed: row.last_played,
-        status: row.status,
-        memberAttendance: row.member_attendance || {},
-        registrationTime: row.registration_time
-      }));
     }
 
     return state;
@@ -482,6 +570,7 @@ export async function saveLeaderboardToSupabase(leaderboardList) {
         team_code: t.teamCode,
         leader_name: t.leaderName,
         members: t.members,
+        active_logins: t.activeLogins || t.active_logins || [],
         abbrev_score: t.abbrevScore || 0,
         image_score: t.imageScore || 0,
         abbrev_completed: t.abbrevCompleted || false,

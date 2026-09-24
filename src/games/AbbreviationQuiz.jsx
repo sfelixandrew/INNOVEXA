@@ -45,8 +45,25 @@ export default function AbbreviationQuiz({
     }
   }, [questionsList, resumeData]);
 
-  const questions = shuffledQuestions.length > 0 ? shuffledQuestions : (questionsList.length > 0 ? questionsList : ABBREVIATION_QUESTIONS);
-  const currentQ = questions[currentIndex] || questions[0];
+  const questions = shuffledQuestions.length > 0 ? shuffledQuestions : questionsList;
+  const currentQ = questions[currentIndex];
+
+  if (!questions || questions.length === 0 || !currentQ) {
+    return (
+      <div className="glass-card jarvis-hud-card" style={{ padding: "2.5rem", maxWidth: "700px", margin: "2rem auto", textAlign: "center", color: "#f8fafc" }}>
+        <HelpCircle size={48} color="#00f0ff" style={{ margin: "0 auto 1rem" }} />
+        <h3 className="jarvis-text-glow" style={{ fontSize: "1.4rem", fontWeight: 800, marginBottom: "0.5rem" }}>
+          No Quiz Questions Available
+        </h3>
+        <p style={{ color: "#7dd3fc", fontSize: "0.9rem", marginBottom: "1.5rem" }}>
+          The Event Coordinator has not added any questions for this quiz track yet. Please wait for questions to be uploaded.
+        </p>
+        <button type="button" onClick={onBack} style={{ background: "rgba(0,240,255,0.15)", border: "1px solid #00f0ff", color: "#00f0ff", padding: "0.6rem 1.25rem", borderRadius: "10px", cursor: "pointer", fontWeight: 700 }}>
+          Back to Dashboard
+        </button>
+      </div>
+    );
+  }
 
   // Mid-game exit detection: trigger pause & request coordinator approval if tab hidden
   useEffect(() => {

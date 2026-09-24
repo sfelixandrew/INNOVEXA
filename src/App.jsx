@@ -17,6 +17,7 @@ import {
   INITIAL_GAME_LOCKS, 
   INITIAL_GAME_TITLES, 
   INITIAL_COORDINATORS, 
+  INITIAL_STUDENT_TEAMS,
   INITIAL_LEADERBOARD,
   ABBREVIATION_QUESTIONS,
   FACT_FINDER_QUESTIONS
@@ -80,26 +81,7 @@ export default function App() {
 
   const [studentTeams, setStudentTeams] = useState(() => {
     const saved = localStorage.getItem("innovex_student_teams");
-    return saved ? JSON.parse(saved) : [
-      {
-        id: "TEAM-1001",
-        teamName: "Cyber Knights",
-        teamCode: "JARVIS-1001",
-        leaderName: "Alex Vance",
-        members: ["Alex Vance", "Sophia Chen", "Liam Patel"],
-        createdTime: "Initial System Team",
-        status: "Active"
-      },
-      {
-        id: "TEAM-1002",
-        teamName: "Quantum Racers",
-        teamCode: "JARVIS-1002",
-        leaderName: "Marcus Brody",
-        members: ["Marcus Brody", "Sarah Jenkins", "David Kim"],
-        createdTime: "Initial System Team",
-        status: "Active"
-      }
-    ];
+    return saved ? JSON.parse(saved) : INITIAL_STUDENT_TEAMS;
   });
 
   const [studentTeam, setStudentTeam] = useState(() => {
@@ -273,11 +255,11 @@ export default function App() {
       fetchInitialSupabaseState().then((dbState) => {
         if (!dbState) return;
         if (dbState.gameLocks) setGameLocks((prev) => ({ ...prev, ...dbState.gameLocks }));
-        if (dbState.coordinators) setCoordinators(dbState.coordinators);
-        if (dbState.studentTeams) setStudentTeams(dbState.studentTeams);
+        if (dbState.coordinators !== undefined) setCoordinators(dbState.coordinators);
+        if (dbState.studentTeams !== undefined) setStudentTeams(dbState.studentTeams);
         if (dbState.quizQuestions) setQuizQuestions(dbState.quizQuestions);
         if (dbState.factQuestions) setRealFakeImages(dbState.factQuestions);
-        if (dbState.leaderboard) setLeaderboard(dbState.leaderboard);
+        if (dbState.leaderboard !== undefined) setLeaderboard(dbState.leaderboard);
       });
 
       fetchGameResumesFromSupabase().then((resumesData) => {
@@ -305,11 +287,11 @@ export default function App() {
             fetchInitialSupabaseState().then((dbState) => {
               if (!dbState) return;
               if (dbState.gameLocks) setGameLocks((prev) => ({ ...prev, ...dbState.gameLocks }));
-              if (dbState.coordinators) setCoordinators(dbState.coordinators);
-              if (dbState.studentTeams) setStudentTeams(dbState.studentTeams);
+              if (dbState.coordinators !== undefined) setCoordinators(dbState.coordinators);
+              if (dbState.studentTeams !== undefined) setStudentTeams(dbState.studentTeams);
               if (dbState.quizQuestions) setQuizQuestions(dbState.quizQuestions);
               if (dbState.factQuestions) setRealFakeImages(dbState.factQuestions);
-              if (dbState.leaderboard) setLeaderboard(dbState.leaderboard);
+              if (dbState.leaderboard !== undefined) setLeaderboard(dbState.leaderboard);
             });
             fetchGameResumesFromSupabase().then((resumesData) => {
               if (resumesData) setGameResumes(resumesData);
@@ -370,73 +352,103 @@ export default function App() {
     triggerConfetti();
     showToast(`Authenticated as ${userObj.role.toUpperCase()} (${userObj.name})!`);
 
-    if (userObj.role === "student") {
-      if (userObj.team) {
-        setStudentTeam(userObj.team);
+    if (userObj.role === "student" && userObj.team) {
+      const teamId = userObj.team.id;
+      const memberName = userObj.name;
 
-        // Record Attendance automatically upon Student Login for logged-in member
-        const teamObj = userObj.team;
-        setLeaderboard((prev) => {
-          const existingIdx = prev.findIndex(
-            (t) => t.teamId === teamObj.id || t.teamName.toLowerCase() === teamObj.teamName.toLowerCase()
-          );
-
-          if (existingIdx !== -1) {
-            const updated = [...prev];
-            const currentItem = { ...updated[existingIdx] };
-            const membersList = currentItem.members || teamObj.members || [userObj.name];
-            const memberAtt = { ...(currentItem.memberAttendance || {}) };
-            
-            // Mark logged-in member as Present
-            memberAtt[userObj.name] = "Present";
-            currentItem.memberAttendance = memberAtt;
-
-            const presentCount = membersList.filter((m) => memberAtt[m] === "Present").length;
-            const absentCount = membersList.length - presentCount;
-
-            if (presentCount === membersList.length) {
-              currentItem.status = "All Members Present ✓";
-            } else {
-              currentItem.status = `${presentCount}/${membersList.length} Present`;
-            }
-
-            currentItem.lastPlayed = `Checked-in (${userObj.name})`;
-            updated[existingIdx] = currentItem;
-            broadcastEvent("LEADERBOARD_SYNC", updated);
-            saveLeaderboardToSupabase(updated);
-            return updated;
-          } else {
-            const membersList = Array.isArray(teamObj.members) && teamObj.members.length > 0 ? teamObj.members : [teamObj.leaderName || userObj.name];
-            const memberAtt = {};
-            membersList.forEach((m) => {
-              memberAtt[m] = m === userObj.name ? "Present" : "Pending";
-            });
-
-            const newLeaderboardEntry = {
-              sNo: prev.length + 1,
-              rank: prev.length + 1,
-              teamId: teamObj.id,
-              teamName: teamObj.teamName,
-              teamCode: teamObj.teamCode,
-              leaderName: teamObj.leaderName,
-              members: membersList,
-              memberAttendance: memberAtt,
-              abbrevScore: 0,
-              imageScore: 0,
-              bonusScore: 0,
-              totalScore: 0,
-              timeSeconds: 0,
-              lastPlayed: `Checked-in (${userObj.name})`,
-              status: `1/${membersList.length} Present`,
-              registrationTime: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) + ", " + new Date().toLocaleDateString()
-            };
-            const updated = [...prev, newLeaderboardEntry];
-            broadcastEvent("LEADERBOARD_SYNC", updated);
-            saveLeaderboardToSupabase(updated);
-            return updated;
+      // Update studentTeams activeLogins
+      setStudentTeams((prev) => {
+        const updated = prev.map((t) => {
+          if (t.id === teamId || t.teamName.toLowerCase() === userObj.team.teamName.toLowerCase()) {
+            const currentActive = t.activeLogins || t.active_logins || [];
+            const newActive = Array.from(new Set([...currentActive, memberName]));
+            const updatedTeam = { ...t, activeLogins: newActive, active_logins: newActive };
+            saveTeamToSupabase(updatedTeam);
+            return updatedTeam;
           }
+          return t;
         });
-      }
+        broadcastEvent("STUDENT_TEAMS_SYNC", updated);
+        return updated;
+      });
+
+      // Update current student team state
+      setStudentTeam((prev) => {
+        const currentActive = (prev && (prev.activeLogins || prev.active_logins)) || userObj.team.activeLogins || [];
+        const newActive = Array.from(new Set([...currentActive, memberName]));
+        return {
+          ...userObj.team,
+          activeLogins: newActive,
+          active_logins: newActive
+        };
+      });
+
+      // Record Attendance & Active Logins on Leaderboard
+      const teamObj = userObj.team;
+      setLeaderboard((prev) => {
+        const existingIdx = prev.findIndex(
+          (t) => t.teamId === teamObj.id || t.teamName.toLowerCase() === teamObj.teamName.toLowerCase()
+        );
+
+        if (existingIdx !== -1) {
+          const updated = [...prev];
+          const currentItem = { ...updated[existingIdx] };
+          const membersList = currentItem.members || teamObj.members || [userObj.name];
+          const memberAtt = { ...(currentItem.memberAttendance || {}) };
+          
+          memberAtt[userObj.name] = "Present";
+          currentItem.memberAttendance = memberAtt;
+
+          const currentActive = currentItem.activeLogins || currentItem.active_logins || [];
+          const newActive = Array.from(new Set([...currentActive, memberName]));
+          currentItem.activeLogins = newActive;
+          currentItem.active_logins = newActive;
+
+          const presentCount = membersList.filter((m) => memberAtt[m] === "Present").length;
+
+          if (presentCount === membersList.length) {
+            currentItem.status = "All Members Present ✓";
+          } else {
+            currentItem.status = `${presentCount}/${membersList.length} Present`;
+          }
+
+          currentItem.lastPlayed = `Checked-in (${userObj.name})`;
+          updated[existingIdx] = currentItem;
+          broadcastEvent("LEADERBOARD_SYNC", updated);
+          saveLeaderboardToSupabase(updated);
+          return updated;
+        } else {
+          const membersList = Array.isArray(teamObj.members) && teamObj.members.length > 0 ? teamObj.members : [teamObj.leaderName || userObj.name];
+          const memberAtt = {};
+          membersList.forEach((m) => {
+            memberAtt[m] = m === userObj.name ? "Present" : "Pending";
+          });
+
+          const newLeaderboardEntry = {
+            sNo: prev.length + 1,
+            rank: prev.length + 1,
+            teamId: teamObj.id,
+            teamName: teamObj.teamName,
+            teamCode: teamObj.teamCode,
+            leaderName: teamObj.leaderName,
+            members: membersList,
+            activeLogins: [memberName],
+            memberAttendance: memberAtt,
+            abbrevScore: 0,
+            imageScore: 0,
+            bonusScore: 0,
+            totalScore: 0,
+            timeSeconds: 0,
+            lastPlayed: `Checked-in (${userObj.name})`,
+            status: `1/${membersList.length} Present`,
+            registrationTime: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) + ", " + new Date().toLocaleDateString()
+          };
+          const updated = [...prev, newLeaderboardEntry];
+          broadcastEvent("LEADERBOARD_SYNC", updated);
+          saveLeaderboardToSupabase(updated);
+          return updated;
+        }
+      });
     }
   };
 
@@ -451,6 +463,44 @@ export default function App() {
   };
 
   const handleLogout = () => {
+    if (loggedInUser && loggedInUser.role === "student" && loggedInUser.team) {
+      const teamId = loggedInUser.team.id;
+      const memberName = loggedInUser.name;
+
+      setStudentTeams((prev) => {
+        const updated = prev.map((t) => {
+          if (t.id === teamId || t.teamName.toLowerCase() === loggedInUser.team.teamName.toLowerCase()) {
+            const currentActive = t.activeLogins || t.active_logins || [];
+            const newActive = currentActive.filter((m) => m !== memberName);
+            const updatedTeam = { ...t, activeLogins: newActive, active_logins: newActive };
+            saveTeamToSupabase(updatedTeam);
+            return updatedTeam;
+          }
+          return t;
+        });
+        broadcastEvent("STUDENT_TEAMS_SYNC", updated);
+        return updated;
+      });
+
+      setLeaderboard((prev) => {
+        const existingIdx = prev.findIndex(
+          (t) => t.teamId === teamId || t.teamName.toLowerCase() === loggedInUser.team.teamName.toLowerCase()
+        );
+        if (existingIdx !== -1) {
+          const updated = [...prev];
+          const item = { ...updated[existingIdx] };
+          const active = (item.activeLogins || item.active_logins || []).filter((m) => m !== memberName);
+          item.activeLogins = active;
+          item.active_logins = active;
+          updated[existingIdx] = item;
+          broadcastEvent("LEADERBOARD_SYNC", updated);
+          saveLeaderboardToSupabase(updated);
+          return updated;
+        }
+        return prev;
+      });
+    }
+
     setLoggedInUser(null);
     showToast("Logged out successfully.");
   };
